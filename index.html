@@ -117,9 +117,9 @@ summary{cursor:pointer;font-weight:600;color:var(--deep)}
 <label class="f">Tanggal<input id="sTgl" type="date"></label>
 <label class="f">Lokasi<input id="sLok" placeholder="Bapelkes Cikarang"></label>
 <label class="f">Jumlah anak<input id="sN" type="number" min="2" max="40" value="10"></label>
-<label class="f">PIN fasilitator<input id="sPin" type="password" minlength="4" required autocomplete="new-password"></label>
+<label class="f" style="grid-column:1/-1">Buat PIN fasilitator (bebas, minimal 4 karakter)<input id="sPin" type="password" minlength="4" required autocomplete="new-password" placeholder="Ketik PIN baru, misalnya 2611"></label>
 </div>
-<p class="note">PIN dipakai untuk mengisi data gold standard, menghapus pengukur, dan mengubah ambang. Simpan baik-baik.</p>
+<p class="note">PIN ini <b>Anda buat sendiri sekarang</b>, tidak ada PIN bawaan. Gunakan untuk mengisi data gold standard, menghapus pengukur, dan mengubah ambang. Bagikan hanya ke sesama fasilitator. PIN tidak bisa dilihat kembali, jadi catat baik-baik. Peserta tidak memerlukan PIN.</p>
 <button class="btn" type="submit" style="margin-top:12px">Buat sesi</button>
 <p class="msg" id="fSesiMsg"></p>
 </form>
@@ -190,7 +190,8 @@ Bias = Σ(x̄peserta,i − x̄GS,i) / N (bertanda: + berarti cenderung lebih tin
 <!-- Dialog PIN -->
 <form class="panel" id="fPin" hidden style="max-width:420px;margin:20px auto 0">
 <h2>Masuk fasilitator</h2>
-<label class="f">PIN sesi ini<input id="pinIn" type="password" autocomplete="current-password"></label>
+<label class="f">PIN sesi ini<input id="pinIn" type="password" autocomplete="current-password" placeholder="PIN yang dibuat saat sesi dibuat"></label>
+<p class="note">Gunakan PIN yang diketik fasilitator waktu membuat sesi ini. Peserta tidak perlu masuk fasilitator.</p>
 <div class="row" style="margin-top:12px"><button class="btn" type="submit">Masuk</button><button class="btn ghost" type="button" id="pinBatal">Batal</button></div>
 <p class="msg" id="pinMsg"></p>
 </form>
