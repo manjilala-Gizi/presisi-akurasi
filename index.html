@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0fb5ae">
+<title>Kalkulator TEM Antropometri</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: clinical work tool, calm, exact, Kemenkes training-room feel
+   IDEA: the paper "formulir presisi-akurasi" that turns into a verdict board
+   PICTURE: live verdict board with TEM gauges against each cut-off
+   COLOUR and TYPE: Kemenkes toska #0fb5ae dominant, deep teal #0b5f5c support, coral accent; Figtree
+   LAYOUT: toska header band with session + sync status, form grid left, verdict board right, recap full width */
+:root{color-scheme:light dark;--bg:light-dark(#ffffff,#0c1716);--ink:light-dark(#10211f,#e6f2f0);--mut:light-dark(#5a6e6b,#9db5b1);--line:light-dark(#d6e6e3,#24403c);--soft:light-dark(#e8f6f4,#12302d);--toska:#0fb5ae;--deep:light-dark(#0b5f5c,#7fdcd5);--ok:light-dark(#0a7d55,#5fd7a3);--bad:light-dark(#c4421f,#ff8f6e);--card:light-dark(#ffffff,#10211f)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Figtree,system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(18px,3vw,36px) max(4vw,16px)}
+.wrap{max-width:1240px;margin:0 auto}
+header{background:var(--toska);color:#fff}
+header h1{font-size:clamp(24px,4vw,38px);line-height:1.05;margin:0 0 6px;font-weight:800;text-wrap:balance}
+header p{margin:0;max-width:70ch;opacity:.95}
+.hrow{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between}
+.sync{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.18);border-radius:999px;padding:6px 12px;font-size:14px;white-space:nowrap}
+.sync i{width:9px;height:9px;border-radius:50%;background:#fff}
+.sync.busy i{background:#ffe27a}.sync.off i{background:#ffb4a0}
+h2{font-size:20px;margin:0 0 12px;color:var(--deep)}
+.grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:28px;align-items:start}
+@media(max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.tab{border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:999px;padding:8px 14px;font:inherit;font-size:14px;min-height:40px;cursor:pointer}
+.tab[aria-pressed=true]{background:var(--deep);color:var(--bg);border-color:var(--deep)}
+.tab.gs[aria-pressed=false]{border-color:var(--toska);color:var(--deep)}
+.tab .dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#e8a33a;margin-left:6px;vertical-align:middle}
+button{font:inherit}
+.btn{border:0;border-radius:10px;padding:10px 14px;min-height:44px;background:var(--deep);color:var(--bg);font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--deep);border:1px solid var(--line)}
+.btn.light{background:#fff;color:#0b5f5c}
+.btn:disabled{opacity:.5;cursor:default}
+.btn:focus-visible,.tab:focus-visible,input:focus-visible,select:focus-visible,.card:focus-visible{outline:3px solid var(--toska);outline-offset:2px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--mut)}
+input,select{font:inherit;font-size:16px;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-height:40px}
+input:disabled{opacity:.65}
+table{border-collapse:collapse;width:100%}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+th{font-size:13px;color:var(--mut);font-weight:600}
+th:first-child,td:first-child{text-align:left}
+.form td input{width:100%;max-width:110px;text-align:right;padding:6px 8px;min-height:36px}
+.form td.d{color:var(--mut)}.form td.hi{color:var(--bad);font-weight:600}
+.note{font-size:13px;color:var(--mut);margin:8px 0 0}
+.msg{font-size:14px;margin:8px 0 0;color:var(--bad)}
+.board{background:var(--soft);border-radius:16px;padding:20px}
+.verdict{font-size:clamp(30px,5vw,46px);font-weight:800;line-height:1.05;margin:4px 0 14px}
+.verdict.ok{color:var(--ok)}.verdict.bad{color:var(--bad)}.verdict.na{color:var(--mut)}
+.gauge{margin:12px 0}
+.gauge .top{display:flex;justify-content:space-between;gap:8px;font-size:14px}
+.gauge .top b{font-size:18px;white-space:nowrap}
+.bar{position:relative;height:12px;border-radius:6px;background:var(--card);margin-top:6px;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;border-radius:6px}
+.bar .cut{position:absolute;top:-2px;bottom:-2px;width:2px;background:var(--ink);left:50%}
+.chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:14px}
+.chip{background:var(--card);border-radius:12px;padding:10px}
+.chip span{display:block;font-size:13px;color:var(--mut)}.chip b{font-size:20px;white-space:nowrap}
+.warn{background:light-dark(#fff1ec,#3a1d14);color:var(--bad);border-radius:10px;padding:10px 12px;font-size:14px;margin:0 0 12px}
+.pill{display:inline-block;padding:2px 10px;border-radius:999px;font-size:13px;font-weight:600}
+.pill.ok{background:light-dark(#dcf5ea,#123a2b);color:var(--ok)}.pill.bad{background:light-dark(#ffe4db,#3a1d14);color:var(--bad)}.pill.na{background:var(--soft);color:var(--mut)}
+details{border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-top:16px}
+summary{cursor:pointer;font-weight:600;color:var(--deep)}
+.sets{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}
+.scroll{overflow-x:auto}
+.formula{font-size:15px;line-height:1.8}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px}
+.card{display:block;text-align:left;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:14px;padding:14px 16px;cursor:pointer;width:100%}
+.card b{display:block;font-size:17px;color:var(--deep)}.card span{font-size:14px;color:var(--mut)}
+.panel{background:var(--soft);border-radius:16px;padding:20px}
+[hidden]{display:none!important}
+@media(max-width:600px){table{font-size:13px}.chips{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.stack thead{display:none}.stack tr{display:grid;padding-block:10px}.stack td{display:flow-root;border:0;padding:3px 0;padding-inline-start:8em;text-align:start}.stack td::before{content:attr(data-l);float:inline-start;width:7.5em;margin-inline-start:-8em;white-space:normal;color:var(--mut)}.stack td:empty{display:none}}
+@media(prefers-reduced-motion:no-preference){.bar i{transition:width .35s ease}}
+</style>
+<script>new MutationObserver(()=>{for(const c of document.querySelectorAll('.stack td:not([data-l])')){let i=0,p=c;while(p=p.previousElementSibling)i+=p.colSpan;c.dataset.l=c.closest('table').rows[0].cells[i]?.textContent||''}}).observe(document,{childList:true,subtree:true})</script>
+<script src="config.js"></script>
+</head>
+<body>
+<header class="band"><div class="wrap">
+<div class="hrow">
+<h1>Kalkulator Standardisasi Antropometri</h1>
+<span class="sync" id="sync"><i></i><span id="syncT">Mode lokal</span></span>
+</div>
+<p id="sesiInfo">Hitung TEM presisi, TEM akurasi terhadap gold standard, bias, %TEM, dan R dari formulir presisi-akurasi.</p>
+<div class="row" id="sesiBar" style="margin-top:12px" hidden>
+<button class="btn light" id="gantiSesi" type="button">Ganti sesi</button>
+<button class="btn light" id="muat" type="button">Muat ulang data</button>
+<button class="btn light" id="fasBtn" type="button">Masuk fasilitator</button>
+</div>
+</div></header>
+
+<main class="band"><div class="wrap">
+
+<!-- Pemilih sesi -->
+<section id="vSesi" hidden>
+<div class="grid">
+<div>
+<h2>Pilih sesi standardisasi</h2>
+<div class="cards" id="sesiList"><p class="note">Memuat daftar sesi…</p></div>
+<p class="msg" id="sesiMsg"></p>
+</div>
+<form class="panel" id="fSesi">
+<h2>Buat sesi baru (fasilitator)</h2>
+<div class="sets">
+<label class="f" style="grid-column:1/-1">Nama sesi<input id="sNama" required placeholder="Standardisasi Hari 2 – Kelas A"></label>
+<label class="f">Tanggal<input id="sTgl" type="date"></label>
+<label class="f">Lokasi<input id="sLok" placeholder="Bapelkes Cikarang"></label>
+<label class="f">Jumlah anak<input id="sN" type="number" min="2" max="40" value="10"></label>
+<label class="f">PIN fasilitator<input id="sPin" type="password" minlength="4" required autocomplete="new-password"></label>
+</div>
+<p class="note">PIN dipakai untuk mengisi data gold standard, menghapus pengukur, dan mengubah ambang. Simpan baik-baik.</p>
+<button class="btn" type="submit" style="margin-top:12px">Buat sesi</button>
+<p class="msg" id="fSesiMsg"></p>
+</form>
+</div>
+</section>
+
+<!-- Kalkulator -->
+<section id="vKalk" hidden>
+<div class="grid">
+<section>
+<h2>Formulir hasil ukur (cm)</h2>
+<div class="tabs" id="tabs"></div>
+<div class="row" style="margin-bottom:10px">
+<label class="f" style="flex:1 1 200px">Nama pengukur<input id="nama" autocomplete="off"></label>
+<button class="btn ghost" id="addP" type="button">+ Pengukur</button>
+<button class="btn ghost" id="delP" type="button">Hapus pengukur ini</button>
+</div>
+<p class="warn" id="gsLock" hidden>Data gold standard hanya bisa diisi fasilitator. Ketuk "Masuk fasilitator" di atas.</p>
+<div class="scroll"><table class="form"><thead><tr><th>Anak</th><th>M1</th><th>M2</th><th>|M1−M2|</th><th id="hGS">x̄ − x̄GS</th></tr></thead><tbody id="fbody"></tbody></table></div>
+<p class="note">Desimal boleh pakai koma. Bisa tempel satu atau dua kolom M1–M2 langsung dari Excel. Selisih ≥ 0,7 cm ditandai merah. Data tersimpan otomatis.</p>
+<p class="msg" id="saveMsg"></p>
+<p class="note" id="sample" hidden>Data awal adalah contoh ilustrasi dari slide 32 MPI 2, bukan data peserta sungguhan.</p>
+</section>
+<aside>
+<h2>Papan hasil</h2>
+<div class="board" id="board"></div>
+</aside>
+</div>
+
+<section style="margin-top:32px">
+<div class="row" style="justify-content:space-between;margin-bottom:10px">
+<h2 style="margin:0">Rekap semua pengukur</h2>
+<div class="row"><button class="btn" id="copy" type="button">Salin rekap ke Excel</button><button class="btn ghost" id="reset" type="button">Kosongkan semua</button></div>
+</div>
+<div class="scroll"><table id="recap" class="stack"></table></div>
+<p class="note" id="copyMsg" aria-live="polite"></p>
+
+<details>
+<summary>Pengaturan ambang dan jumlah anak</summary>
+<div class="sets">
+<label class="f">Jumlah anak<input id="nAnak" type="number" min="2" max="40"></label>
+<label class="f">TEM presisi peserta &lt; (cm)<input id="cPres" type="number" step="0.1"></label>
+<label class="f">TEM akurasi &lt; (cm)<input id="cAkur" type="number" step="0.1"></label>
+<label class="f">TEM gold standard &lt; (cm)<input id="cGS" type="number" step="0.1"></label>
+<label class="f">%TEM &lt; (%)<input id="cRel" type="number" step="0.1"></label>
+<label class="f">R &gt;<input id="cR" type="number" step="0.01"></label>
+<label class="f">D untuk akurasi<select id="mAkur"><option value="mean">Rerata M1–M2 peserta vs rerata GS</option><option value="m1">M1 peserta vs M1 GS</option></select></label>
+</div>
+<p class="note" id="setNote">Default mengikuti slide 35 MPI 2 (WHO–UNICEF 2019). %TEM dan R hanya acuan tambahan, tidak menentukan kelulusan.</p>
+</details>
+
+<details>
+<summary>Rumus yang dipakai</summary>
+<div class="formula">
+<p>Selisih per anak: D<sub>i</sub> = |M1<sub>i</sub> − M2<sub>i</sub>|<br>
+TEM = √( ΣD<sub>i</sub>² / 2N )<br>
+%TEM = TEM / rerata seluruh hasil ukur × 100<br>
+R = 1 − TEM² / SD² (SD dari seluruh hasil ukur M1 dan M2)<br>
+TEM akurasi = √( ΣD<sub>i</sub>² / 2N ), dengan D<sub>i</sub> = x̄peserta,i − x̄GS,i<br>
+Bias = Σ(x̄peserta,i − x̄GS,i) / N (bertanda: + berarti cenderung lebih tinggi)</p>
+<p class="note">Jika TEM gold standard ≥ ambang, akurasi tidak dinilai dan kelulusan peserta hanya berdasarkan presisi.</p>
+</div>
+</details>
+
+</section>
+</section>
+
+<!-- Dialog PIN -->
+<form class="panel" id="fPin" hidden style="max-width:420px;margin:20px auto 0">
+<h2>Masuk fasilitator</h2>
+<label class="f">PIN sesi ini<input id="pinIn" type="password" autocomplete="current-password"></label>
+<div class="row" style="margin-top:12px"><button class="btn" type="submit">Masuk</button><button class="btn ghost" type="button" id="pinBatal">Batal</button></div>
+<p class="msg" id="pinMsg"></p>
+</form>
+
+</div></main>
+<footer class="band" style="border-top:1px solid var(--line);padding-block:18px;text-align:center;font-size:14px;color:var(--mut)">Developed by : Manjilala</footer>
+
+<script>
+{
+const DEF_CUT={pres:0.6,akur:0.8,gs:0.4,rel:1.5,r:0.95};
+const NAMA_GS='Gold standard';
+const LS={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+const SS={get(k){try{return sessionStorage.getItem(k)||''}catch(e){return ''}},set(k,v){try{sessionStorage.setItem(k,v)}catch(e){}}};
+const API_DEFAULT='https://script.google.com/macros/s/AKfycby1D5SDrv1RUoFQjk8sUT1wrEZsqZBusFhjhhDP63ZJ00zEPlfRmQIObrqQVpepn-dHUw/exec';
+const API=(window.TEM_API||API_DEFAULT).trim();
+try{localStorage.removeItem('tem-api')}catch(e){}
+const uid=()=>Math.random().toString(36).slice(2,10);
+const SAMPLE1=[68.4,72.1,75.6,80.3,83.0,86.2,90.5,94.1,97.6,101.2],SAMPLE2=[68.7,72.0,75.2,80.5,83.4,86.0,90.9,93.8,97.9,101.0];
+const GS1=[68.5,72.0,75.4,80.4,83.2,86.1,90.7,94.0,97.8,101.1],GS2=[68.6,72.1,75.4,80.3,83.1,86.2,90.6,94.0,97.7,101.0];
+const lokal=()=>({sesi:{id:'lokal',nama:'Mode lokal',tanggal:'',lokasi:'',n:10,cut:{...DEF_CUT},mAkur:'mean'},sel:1,sample:true,people:[{uid:uid(),name:NAMA_GS,role:'gs',m1:GS1.slice(),m2:GS2.slice()},{uid:uid(),name:'Peserta 1',role:'peserta',m1:SAMPLE1.slice(),m2:SAMPLE2.slice()}]});
+let st=LS.get('tem-state',null);
+let queue=LS.get('tem-queue',{});
+let pin=SS.get('tem-pin');
+const $=id=>document.getElementById(id);
+const num=v=>{if(v===''||v==null)return null;const x=parseFloat(String(v).replace(',','.'));return isFinite(x)?x:null};
+const f=(x,d=2)=>x==null||!isFinite(x)?'–':x.toLocaleString('id-ID',{minimumFractionDigits:d,maximumFractionDigits:d});
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const persist=()=>{if(!st)return;const c={...st};delete c._rows;LS.set('tem-state',c);LS.set('tem-queue',queue)};
+const isFas=()=>!API||(!!pin&&SS.get('tem-pin-sesi')===st?.sesi?.id);
+const cut=()=>Object.assign({},DEF_CUT,st.sesi.cut||{});
+const pad=p=>{for(const k of['m1','m2']){p[k]=p[k]||[];while(p[k].length<st.sesi.n)p[k].push(null);p[k].length=st.sesi.n}};
+const mean=a=>a.reduce((s,x)=>s+x,0)/a.length;
+
+/* ---------- jaringan ---------- */
+async function apiGet(params){const r=await fetch(API+'?'+new URLSearchParams(params));const j=await r.json();if(!j.ok)throw new Error(j.error||'Gagal memuat');return j}
+async function apiPost(body){const r=await fetch(API,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(body)});const j=await r.json();if(!j.ok)throw new Error(j.error||'Gagal menyimpan');return j}
+function setSync(){
+  const n=Object.keys(queue).length,el=$('sync');
+  if(!API){el.className='sync';$('syncT').textContent='Mode lokal';return}
+  if(!navigator.onLine){el.className='sync off';$('syncT').textContent='Offline'+(n?` · ${n} antre`:'');return}
+  if(flushing||n){el.className='sync busy';$('syncT').textContent='Menyimpan…';return}
+  el.className='sync';$('syncT').textContent='Tersimpan';
+}
+let flushing=false;
+async function flush(){
+  if(!API||flushing||!navigator.onLine)return;
+  const keys=Object.keys(queue);if(!keys.length){setSync();return}
+  flushing=true;setSync();
+  for(const k of keys){
+    const job=queue[k];
+    const pj=st?.people.find(q=>q.uid===k);if(pj&&pj.srv&&st.sesi.id===job.sesi)job.lama=pj.srv;
+    try{
+      await apiPost(job);
+      if(queue[k]===job)delete queue[k];
+      const p=st?.people.find(q=>q.uid===k);
+      if(p&&st.sesi.id===job.sesi){p.srv=job.nama;if(!queue[k])p.dirty=false}
+      $('saveMsg').textContent='';
+    }catch(err){
+      if(err instanceof TypeError)break; // jaringan putus, coba lagi nanti
+      delete queue[k];
+      $('saveMsg').textContent=`Gagal menyimpan "${job.nama}": ${err.message}`;
+      const p=st?.people.find(q=>q.uid===k);if(p)p.dirty=false;
+    }
+  }
+  flushing=false;persist();setSync();if(st&&!$('vKalk').hidden)drawTabs();
+}
+const timers={};
+function enqueue(p){
+  if(!API){persist();return}
+  p.dirty=true;
+  clearTimeout(timers[p.uid]);
+  timers[p.uid]=setTimeout(()=>{
+    if(!p.name.trim()){$('saveMsg').textContent='Isi nama pengukur dulu agar data tersimpan.';return}
+    queue[p.uid]={action:'simpan',sesi:st.sesi.id,nama:p.name.trim(),lama:p.srv||'',peran:p.role,m1:p.m1,m2:p.m2,pin:p.role==='gs'?pin:undefined};
+    persist();flush();
+  },900);
+  persist();setSync();
+}
+async function pull(silent){
+  if(!API||!st?.sesi||!navigator.onLine)return;
+  try{
+    const j=await apiGet({action:'data',sesi:st.sesi.id});
+    st.sesi=j.sesi;
+    const grp=new Map();
+    for(const[nm,peran,anak,m1,m2]of j.data){if(!grp.has(nm))grp.set(nm,{name:nm,role:peran,m1:[],m2:[]});const g=grp.get(nm);if(anak>=1){g.m1[anak-1]=m1;g.m2[anak-1]=m2}}
+    const next=[];
+    for(const g of grp.values()){
+      let p=st.people.find(q=>q.srv===g.name)||(g.role==='gs'?st.people.find(q=>q.role==='gs'&&!q.srv&&!q.dirty&&!queue[q.uid]):null);
+      if(p&&(p.dirty||queue[p.uid])){next.push(p);continue}
+      if(!p)p={uid:uid(),srv:g.name};
+      Object.assign(p,{name:g.name,role:g.role,m1:g.m1,m2:g.m2,dirty:false});next.push(p);
+    }
+    for(const p of st.people)if(!next.includes(p)&&(!p.srv||p.dirty||queue[p.uid]))next.push(p);
+    if(!next.some(p=>p.role==='gs'))next.unshift({uid:uid(),name:NAMA_GS,role:'gs',m1:[],m2:[]});
+    next.sort((a,b)=>(a.role==='gs'?-1:0)-(b.role==='gs'?-1:0));
+    const selUid=st.people[st.sel]?.uid;
+    st.people=next;st.sel=Math.max(0,next.findIndex(p=>p.uid===selUid));
+    persist();renderKalk(true);
+  }catch(err){if(!silent)$('saveMsg').textContent='Gagal memuat data: '+err.message}
+}
+
+/* ---------- sesi ---------- */
+async function showSesi(){
+  $('vSesi').hidden=false;$('vKalk').hidden=true;$('fPin').hidden=true;$('sesiBar').hidden=true;
+  $('sesiInfo').textContent='Pilih sesi yang sedang berjalan, atau buat sesi baru bila Anda fasilitator.';
+  $('sTgl').value=new Date().toISOString().slice(0,10);
+  try{
+    const j=await apiGet({action:'sesi'});
+    $('sesiList').innerHTML=j.sesi.length?j.sesi.map(s=>`<button type="button" class="card" data-id="${esc(s.id)}"><b>${esc(s.nama)}</b><span>${esc(s.tanggal||'')}${s.lokasi?' · '+esc(s.lokasi):''} · ${esc(s.n)} anak</span></button>`).join(''):'<p class="note">Belum ada sesi. Buat sesi baru di samping.</p>';
+    $('sesiList')._data=j.sesi;$('sesiMsg').textContent='';
+  }catch(err){$('sesiList').innerHTML='';$('sesiMsg').textContent=navigator.onLine?'Gagal memuat sesi: '+err.message:'Sedang offline. Sambungkan internet untuk memilih sesi.'}
+}
+function openSesi(s){
+  st={sesi:s,sel:1,sample:false,people:[{uid:uid(),name:NAMA_GS,role:'gs',m1:[],m2:[]}]};
+  if(SS.get('tem-pin-sesi')!==s.id){pin='';SS.set('tem-pin','')}
+  persist();renderKalk();pull();
+}
+$('sesiList').addEventListener('click',e=>{const c=e.target.closest('.card');if(!c)return;const s=($('sesiList')._data||[]).find(x=>x.id===c.dataset.id);if(s)openSesi(s)});
+$('fSesi').addEventListener('submit',async e=>{
+  e.preventDefault();const b=$('fSesi').querySelector('button[type=submit]');b.disabled=true;$('fSesiMsg').textContent='';
+  try{
+    const p=$('sPin').value;
+    const j=await apiPost({action:'buatSesi',nama:$('sNama').value,tanggal:$('sTgl').value,lokasi:$('sLok').value,n:$('sN').value,pin:p,cut:DEF_CUT,mAkur:'mean'});
+    pin=p;SS.set('tem-pin',p);SS.set('tem-pin-sesi',j.sesi.id);openSesi(j.sesi);
+  }catch(err){$('fSesiMsg').textContent=err.message}finally{b.disabled=false}
+});
+$('gantiSesi').addEventListener('click',()=>{st=null;LS.set('tem-state',null);showSesi()});
+$('muat').addEventListener('click',()=>{flush();pull()});
+$('fasBtn').addEventListener('click',()=>{if(isFas()){pin='';SS.set('tem-pin','');renderKalk();return}$('fPin').hidden=false;$('pinIn').value='';$('pinMsg').textContent='';$('pinIn').focus()});
+$('pinBatal').addEventListener('click',()=>{$('fPin').hidden=true});
+$('fPin').addEventListener('submit',async e=>{
+  e.preventDefault();const p=$('pinIn').value;
+  try{await apiPost({action:'cekPin',sesi:st.sesi.id,pin:p});pin=p;SS.set('tem-pin',p);SS.set('tem-pin-sesi',st.sesi.id);$('fPin').hidden=true;renderKalk()}
+  catch(err){$('pinMsg').textContent=err.message}
+});
+
+/* ---------- hitung ---------- */
+function calc(p){
+  const gs=st.people.find(q=>q.role==='gs');let sd2=0,n=0,all=[],accD=0,accN=0,biasS=0;
+  for(let i=0;i<st.sesi.n;i++){
+    const a=p.m1[i],b=p.m2[i];
+    if(a!=null&&b!=null){sd2+=(a-b)**2;n++;all.push(a,b)}
+    if(p.role!=='gs'&&gs){
+      let x,y;
+      if(st.sesi.mAkur==='m1'){x=a;y=gs.m1[i]}
+      else{x=a!=null&&b!=null?(a+b)/2:null;const g1=gs.m1[i],g2=gs.m2[i];y=g1!=null&&g2!=null?(g1+g2)/2:null}
+      if(x!=null&&y!=null){accD+=(x-y)**2;biasS+=x-y;accN++}
+    }
+  }
+  const tem=n?Math.sqrt(sd2/(2*n)):null;let rel=null,R=null;
+  if(all.length>1){const m=mean(all);rel=tem/m*100;const v=all.reduce((s,x)=>s+(x-m)**2,0)/(all.length-1);R=v>0?1-tem**2/v:null}
+  return{n,tem,rel,R,acc:accN?Math.sqrt(accD/(2*accN)):null,bias:accN?biasS/accN:null};
+}
+function judge(r,gsOk){
+  const c=cut();if(r.tem==null)return{t:'Data belum lengkap',c:'na'};
+  const pOk=r.tem<c.pres;
+  if(!gsOk)return pOk?{t:'Lulus (presisi saja)',c:'ok'}:{t:'Re-test',c:'bad'};
+  return pOk&&r.acc!=null&&r.acc<c.akur?{t:'Lulus',c:'ok'}:{t:'Re-test',c:'bad'};
+}
+function gauge(label,val,ct,unit){
+  const pct=val==null?0:Math.min(100,val/ct*50),ok=val!=null&&val<ct;
+  return `<div class="gauge"><div class="top"><span>${label}<br><small style="color:var(--mut)">ambang &lt; ${f(ct,1)} ${unit}</small></span><b style="color:${val==null?'var(--mut)':ok?'var(--ok)':'var(--bad)'}">${f(val)} ${unit}</b></div><div class="bar"><i style="width:${pct}%;background:${ok?'var(--toska)':'var(--bad)'}"></i><span class="cut"></span></div></div>`;
+}
+const gsOf=()=>st.people.find(q=>q.role==='gs');
+function gDiff(p,i){const gs=gsOf();if(!gs||p.role==='gs')return'';const a=p.m1[i],b=p.m2[i],x=a!=null&&b!=null?(a+b)/2:null,g1=gs.m1[i],g2=gs.m2[i],y=g1!=null&&g2!=null?(g1+g2)/2:null;return x!=null&&y!=null?(x-y>0?'+':'')+f(x-y,2):'–'}
+
+/* ---------- tampilan ---------- */
+function drawTabs(){
+  $('tabs').innerHTML=st.people.map((q,i)=>`<button type="button" class="tab${q.role==='gs'?' gs':''}" data-i="${i}" aria-pressed="${i===st.sel}">${esc(q.name||'(tanpa nama)')}${API&&(q.dirty||queue[q.uid])?'<span class="dot" title="belum tersimpan"></span>':''}</button>`).join('');
+}
+function renderKalk(keepFocus){
+  if(keepFocus&&document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#fbody,#nama')){drawTabs();results();return}
+  $('vSesi').hidden=true;$('vKalk').hidden=false;$('sesiBar').hidden=!API;
+  const s=st.sesi;
+  $('sesiInfo').textContent=API?`${s.nama}${s.tanggal?' · '+s.tanggal:''}${s.lokasi?' · '+s.lokasi:''} · ${s.n} anak`:'Mode lokal: data hanya tersimpan di perangkat ini.';
+  $('fasBtn').textContent=isFas()?'Keluar fasilitator':'Masuk fasilitator';
+  st.people.forEach(pad);
+  if(st.sel>=st.people.length||st.sel<0)st.sel=0;
+  const p=st.people[st.sel],isGS=p.role==='gs',lock=isGS&&!isFas();
+  drawTabs();
+  $('nama').value=p.name;$('nama').disabled=isGS;
+  $('delP').hidden=isGS||(API&&!isFas()&&!!p.srv);
+  $('gsLock').hidden=!lock;
+  $('hGS').textContent=isGS?'':'x̄ − x̄GS';
+  $('fbody').innerHTML=Array.from({length:s.n},(_,i)=>{
+    const a=p.m1[i],b=p.m2[i],d=a!=null&&b!=null?Math.abs(a-b):null;
+    const v=x=>x==null?'':String(x).replace('.',',');
+    return `<tr><td>${i+1}</td><td><input inputmode="decimal" data-k="m1" data-i="${i}" value="${v(a)}" aria-label="Anak ${i+1} M1"${lock?' disabled':''}></td><td><input inputmode="decimal" data-k="m2" data-i="${i}" value="${v(b)}" aria-label="Anak ${i+1} M2"${lock?' disabled':''}></td><td class="${d!=null&&d>=0.7?'hi':'d'}">${f(d,1)}</td><td class="d">${gDiff(p,i)}</td></tr>`}).join('');
+  $('sample').hidden=!st.sample;$('reset').hidden=!!API;
+  const c=cut(),fas=isFas();
+  $('nAnak').value=s.n;$('cPres').value=c.pres;$('cAkur').value=c.akur;$('cGS').value=c.gs;$('cRel').value=c.rel;$('cR').value=c.r;$('mAkur').value=s.mAkur||'mean';
+  for(const id of['nAnak','cPres','cAkur','cGS','cRel','cR','mAkur'])$(id).disabled=!fas;
+  $('setNote').textContent=(fas?'':'Hanya fasilitator yang dapat mengubah pengaturan. ')+'Default mengikuti slide 35 MPI 2 (WHO–UNICEF 2019). %TEM dan R hanya acuan tambahan.';
+  results();
+}
+function results(){
+  const c=cut(),gs=gsOf(),rg=gs?calc(gs):{tem:null},gsOk=rg.tem!=null&&rg.tem<c.gs,p=st.people[st.sel],r=calc(p);
+  let html;
+  if(p.role==='gs'){
+    const ok=gsOk;
+    html=`<div style="font-size:14px;color:var(--mut)">Gold standard</div><div class="verdict ${rg.tem==null?'na':ok?'ok':'bad'}">${rg.tem==null?'Data belum lengkap':ok?'Layak jadi rujukan':'Belum layak rujukan'}</div>${gauge('TEM presisi gold standard',rg.tem,c.gs,'cm')}<div class="chips"><div class="chip"><span>%TEM</span><b>${f(rg.rel)}%</b></div><div class="chip"><span>R</span><b>${f(rg.R,3)}</b></div><div class="chip"><span>Anak lengkap</span><b>${rg.n}/${st.sesi.n}</b></div></div>`;
+  }else{
+    const warn=rg.tem==null?'<p class="warn">Data gold standard belum diisi. Akurasi belum bisa dinilai.</p>':gsOk?'':`<p class="warn">TEM gold standard ${f(rg.tem)} cm (≥ ${f(c.gs,1)} cm), jadi belum layak dijadikan rujukan. Peserta dinilai dari presisi saja.</p>`;
+    const j=judge(r,gsOk);
+    html=`${warn}<div style="font-size:14px;color:var(--mut)">${esc(p.name||'(tanpa nama)')}</div><div class="verdict ${j.c}">${j.t}</div>${gauge('TEM presisi (intra-observer)',r.tem,c.pres,'cm')}${gsOk?gauge('TEM akurasi terhadap gold standard',r.acc,c.akur,'cm'):''}<div class="chips"><div class="chip"><span>Bias</span><b>${r.bias==null?'–':(r.bias>0?'+':'')+f(r.bias)} cm</b></div><div class="chip"><span>%TEM (&lt; ${f(c.rel,1)}%)</span><b>${f(r.rel)}%</b></div><div class="chip"><span>R (&gt; ${f(c.r,2)})</span><b>${f(r.R,3)}</b></div></div>${r.bias!=null&&Math.abs(r.bias)>=0.3?`<p class="note">Bias ${r.bias>0?'positif: cenderung mengukur lebih tinggi':'negatif: cenderung mengukur lebih rendah'} dari gold standard. Jadikan bahan umpan balik teknik.</p>`:''}`;
+  }
+  $('board').innerHTML=html;
+  const rows=st.people.map(q=>{const x=calc(q);const j=q.role!=='gs'?judge(x,gsOk):{t:x.tem==null?'Data belum lengkap':gsOk?'Layak rujukan':'Belum layak',c:x.tem==null?'na':gsOk?'ok':'bad'};return{q,x,j}});
+  $('recap').innerHTML=`<thead><tr><th>Pengukur</th><th>Anak</th><th>TEM presisi</th><th>TEM akurasi</th><th>Bias</th><th>%TEM</th><th>R</th><th>Keputusan</th></tr></thead><tbody>${rows.map(({q,x,j})=>{const ps=q.role!=='gs';return `<tr><td>${esc(q.name||'(tanpa nama)')}</td><td>${x.n}</td><td>${f(x.tem)}</td><td>${ps&&gsOk?f(x.acc):'–'}</td><td>${ps&&x.bias!=null?(x.bias>0?'+':'')+f(x.bias):'–'}</td><td>${f(x.rel)}%</td><td>${f(x.R,3)}</td><td><span class="pill ${j.c}">${esc(j.t)}</span></td></tr>`}).join('')}</tbody>`;
+  st._rows=rows;st._gsOk=gsOk;
+}
+function refreshRow(i){
+  const p=st.people[st.sel],tr=$('fbody').rows[i];if(!tr)return;
+  const a=p.m1[i],b=p.m2[i],d=a!=null&&b!=null?Math.abs(a-b):null;
+  tr.cells[3].textContent=f(d,1);tr.cells[3].className=d!=null&&d>=0.7?'hi':'d';tr.cells[4].textContent=gDiff(p,i);
+}
+
+/* ---------- interaksi ---------- */
+$('fbody').addEventListener('input',e=>{const t=e.target;if(!t.dataset.k)return;const p=st.people[st.sel];p[t.dataset.k][+t.dataset.i]=num(t.value);st.sample=false;$('sample').hidden=true;refreshRow(+t.dataset.i);results();enqueue(p);drawTabs()});
+$('fbody').addEventListener('paste',e=>{
+  const t=e.target;if(!t.dataset.k)return;const txt=(e.clipboardData||window.clipboardData).getData('text');if(!/[\t\n]/.test(txt))return;
+  e.preventDefault();const lines=txt.replace(/\r/g,'').split('\n').filter(l=>l.trim()!=='');const p=st.people[st.sel];let i=+t.dataset.i;
+  for(const l of lines){if(i>=st.sesi.n)break;const c=l.split('\t');if(t.dataset.k==='m1'){p.m1[i]=num(c[0]);if(c.length>1)p.m2[i]=num(c[1])}else p.m2[i]=num(c[0]);i++}
+  st.sample=false;enqueue(p);renderKalk();
+});
+$('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(!b)return;st.sel=+b.dataset.i;persist();renderKalk()});
+$('nama').addEventListener('input',e=>{const p=st.people[st.sel];p.name=e.target.value;drawTabs();results();enqueue(p)});
+$('addP').addEventListener('click',()=>{const n=st.people.filter(p=>p.role!=='gs').length+1;st.people.push({uid:uid(),name:API?'':'Peserta '+n,role:'peserta',m1:[],m2:[]});st.sel=st.people.length-1;persist();renderKalk();$('nama').focus()});
+let delArm=false;
+$('delP').addEventListener('click',async e=>{
+  const b=e.target;if(!delArm){delArm=true;b.textContent='Yakin hapus? Ketuk lagi';setTimeout(()=>{delArm=false;b.textContent='Hapus pengukur ini'},3000);return}
+  delArm=false;b.textContent='Hapus pengukur ini';const p=st.people[st.sel];
+  if(API&&p.srv){try{await apiPost({action:'hapus',sesi:st.sesi.id,pin,nama:p.srv})}catch(err){$('saveMsg').textContent=err.message;return}}
+  delete queue[p.uid];st.people.splice(st.sel,1);st.sel=Math.max(0,st.sel-1);persist();renderKalk();
+});
+let resArm=false;
+$('reset').addEventListener('click',e=>{const b=e.target;if(!resArm){resArm=true;b.textContent='Ketuk lagi untuk mengosongkan';setTimeout(()=>{resArm=false;b.textContent='Kosongkan semua'},3000);return}resArm=false;b.textContent='Kosongkan semua';const s=st.sesi;st=lokal();st.sesi=s;st.sample=false;st.people.forEach(p=>{p.m1=[];p.m2=[]});persist();renderKalk()});
+$('copy').addEventListener('click',async()=>{
+  const g=v=>v==null||!isFinite(v)?'':String(Math.round(v*1000)/1000).replace('.',',');
+  const lines=[['Pengukur','Anak','TEM presisi','TEM akurasi','Bias','%TEM','R','Keputusan'].join('\t'),...st._rows.map(({q,x,j})=>{const ps=q.role!=='gs';return[q.name,x.n,g(x.tem),ps&&st._gsOk?g(x.acc):'',ps?g(x.bias):'',g(x.rel),g(x.R),j.t].join('\t')})];
+  try{await navigator.clipboard.writeText(lines.join('\n'));$('copyMsg').textContent='Rekap tersalin. Tempel (Ctrl+V) di Excel atau Google Sheets.'}catch(err){$('copyMsg').textContent='Browser menolak menyalin otomatis. Blok tabel rekap lalu salin manual.'}
+});
+let setTimer;
+function onSet(fn){return e=>{fn(e.target.value);persist();renderKalk();if(API){clearTimeout(setTimer);setTimer=setTimeout(async()=>{try{await apiPost({action:'atur',sesi:st.sesi.id,pin,n:st.sesi.n,cut:st.sesi.cut,mAkur:st.sesi.mAkur});$('saveMsg').textContent=''}catch(err){$('saveMsg').textContent='Pengaturan gagal disimpan: '+err.message}},600)}}}
+const setCut=(k,d)=>v=>{st.sesi.cut=Object.assign({},DEF_CUT,st.sesi.cut||{},{[k]:num(v)??d})};
+$('nAnak').addEventListener('change',onSet(v=>{st.sesi.n=Math.max(2,Math.min(40,parseInt(v)||10))}));
+$('cPres').addEventListener('change',onSet(setCut('pres',0.6)));
+$('cAkur').addEventListener('change',onSet(setCut('akur',0.8)));
+$('cGS').addEventListener('change',onSet(setCut('gs',0.4)));
+$('cRel').addEventListener('change',onSet(setCut('rel',1.5)));
+$('cR').addEventListener('change',onSet(setCut('r',0.95)));
+$('mAkur').addEventListener('change',onSet(v=>{st.sesi.mAkur=v}));
+window.addEventListener('online',()=>{setSync();flush();pull(true)});
+window.addEventListener('offline',setSync);
+setInterval(()=>{if(API&&st&&!$('vKalk').hidden&&document.visibilityState==='visible'){flush();pull(true)}},20000);
+
+function start(){
+  setSync();
+  if(!API){if(!st||st.sesi?.id!=='lokal')st=lokal();persist();renderKalk();return}
+  if(st&&st.sesi&&st.sesi.id!=='lokal'){renderKalk();flush();pull(true)}else{st=null;showSesi()}
+}
+start();
+if('serviceWorker'in navigator&&location.protocol==='https:'&&!location.hostname.endsWith('claude.ai')){try{navigator.serviceWorker.register('sw.js').catch(()=>{})}catch(e){}}
+}
+</script>
+</body>
+</html>
