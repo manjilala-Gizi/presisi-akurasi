@@ -1,14 +1,14 @@
 {
-  "name": "Kalkulator Standardisasi Antropometri",
-  "short_name": "Kalkulator TEM",
-  "description": "Hitung TEM presisi, akurasi, bias, %TEM dan R untuk uji standardisasi pengukur antropometri gold standard.",
+  "name": "Standardisasi Antropometri",
+  "short_name": "Standardisasi",
+  "description": "Uji presisi dan akurasi pengukur panjang/tinggi badan balita (DHS Height Standardization Tool).",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0fb5ae",
+  "theme_color": "#00b5ad",
   "icons": [
-    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
-    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"}
   ]
 }
